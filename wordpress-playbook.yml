@@ -1,0 +1,75 @@
+- name: Install docker
+  hosts: localhost
+  become: yes
+  tasks:
+
+
+    - name: Update all yum packages
+      yum:
+        name: '*'
+        state: latest
+
+    - name: Change the ami 'tape' group
+      group:
+        name: tape
+        gid: 1400
+
+    - name: Create a wordpress group
+      group:
+        name: wordpress
+        gid: 33
+       
+    - name: Create a wordpress user
+      user:
+        name: wordpress
+        uid: 33 
+
+    - name: Install docker
+      command: amazon-linux-extras install docker -y
+      args:
+        creates: /var/run/docker.sock
+
+    - name: Start docker
+      service:
+        name: docker
+        state: started
+
+    - name: Add the user 'ec2-user' to the group 'docker'
+      user:
+        name: ec2-user
+        group: docker
+
+
+    - name: Install docker compose
+      shell: sudo curl -L https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m) -o /usr/bin/docker-compose
+      args:
+        creates: /usr/bin/docker-compose
+
+    - name: Make compose executable
+      file: 
+        dest: /usr/bin/docker-compose
+        mode: a+x
+
+    - name: Find rds hostname
+      ec2_instance_info:
+        region: eu-west-2
+        filters:
+          "tag:Role": WordpressServer
+      register: data_struct
+
+    - set_fact:
+        rds_endpoint: "{{ data_struct.instances[0].tags.RDS_Endpoint }}"
+
+    # This step assumes you have created the wordpress user with password in rds
+    - name: Copy template
+      vars:
+        wordpress_db_password: 638#Sww2)"cbf43=
+        wordpress_db_user: wordpress
+        wordpress_db_name: wordpress
+      template:
+        src: .env
+        dest: .env
+
+    - name: print all returned values
+      debug:
+        msg: "{{ rds_endpoint }}"

@@ -1,0 +1,18 @@
+# Production looking wordpress compose that uses RDS as the db server
+
+version: '3.3'
+
+services:
+
+   wordpress:
+     image: wordpress:latest
+     ports:
+       - "80:80"
+     restart: always
+     volumes:
+       - /root/wordpress-content:/var/www/html
+     environment:
+       WORDPRESS_DB_HOST: ${WORDPRESS_DB_HOST}
+       WORDPRESS_DB_USER: ${WORDPRESS_DB_USER}
+       WORDPRESS_DB_PASSWORD: ${WORDPRESS_DB_PASSWORD}
+       WORDPRESS_DB_NAME: ${WORDPRESS_DB_NAME}
